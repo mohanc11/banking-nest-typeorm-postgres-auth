@@ -12,7 +12,7 @@ import {
   ForbiddenException,
   Delete,
 } from '@nestjs/common';
-import { Auth } from 'src/auth/entities/auth.entity';
+import { Auth, USER_ROLE } from 'src/auth/entities/auth.entity';
 
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { AbilityFatory, Action } from './ability/ability-factory';
@@ -48,6 +48,8 @@ export class CustomerController {
     const isAllowed = ability.can(Action.Read, Auth);
     if (!isAllowed) throw new ForbiddenException('Only admin can do it');
 
+    if (req.user.customerId !== id && req.user.user_role !== USER_ROLE.ADMIN)
+      throw new ForbiddenException('only owner/admin can do it');
     return await this.customerService.getCustomerProfile(id);
   }
 
@@ -71,14 +73,24 @@ export class CustomerController {
   async deleteProfile(
     @Request() req,
     @Param('id') id: string,
-  ): Promise<Customer> {
-    console.log(req);
-    console.log(req.params.id);
-
+  ): Promise<string> {
     const ability = this.abilityFactory.defineAbility(req.user);
-    const isAllowed = ability.cannot(Action.Delete, Auth);
+    const isAllowed = ability.cannot(Action.Delete, Auth, id);
     if (!isAllowed) throw new ForbiddenException('Only admin can do it');
 
-    return this.customerService.deleteCustomer(id);
+    if (req.user.customerId !== id)
+      throw new ForbiddenException('Only owner can do it');
+    //  return this.customerService.deleteCustomer(id);
+    return 'OOOOOOO';
+    /* 
+    try {
+      ForbiddenError.from(ability)
+        .setMessage('Only admin can do it')
+        .throwUnlessCan(Action.Delete, Auth);
+      return this.customerService.deleteCustomer(id);
+    } catch (error) {
+      if (error instanceof ForbiddenError)
+        throw new ForbiddenException(error.message);
+    } */
   }
 }

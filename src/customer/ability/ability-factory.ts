@@ -28,11 +28,14 @@ export class AbilityFatory {
 
     if (auth.user_role === USER_ROLE.ADMIN) {
       can(Action.Manage, Auth);
+      //    cannot(Action.Manage, Auth).because('Not Admin')
     } else {
       can(Action.Create, Auth);
       can(Action.Read, Auth);
       can(Action.Update, Auth);
-      cannot(Action.Delete, Auth);
+      cannot(Action.Delete, Auth, {
+        customerId: { $ne: auth.customerId },
+      }).because('*****');
     }
     return build({
       detectSubjectType: (item) =>
