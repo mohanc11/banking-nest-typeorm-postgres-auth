@@ -73,15 +73,15 @@ export class CustomerController {
   async deleteProfile(
     @Request() req,
     @Param('id') id: string,
-  ): Promise<string> {
+  ): Promise<Customer> {
     const ability = this.abilityFactory.defineAbility(req.user);
     const isAllowed = ability.cannot(Action.Delete, Auth, id);
     if (!isAllowed) throw new ForbiddenException('Only admin can do it');
 
-    if (req.user.customerId !== id)
+    if (req.user.customerId !== id && req.user.user_role !== USER_ROLE.ADMIN)
       throw new ForbiddenException('Only owner can do it');
-    //  return this.customerService.deleteCustomer(id);
-    return 'OOOOOOO';
+    return this.customerService.deleteCustomer(id);
+
     /* 
     try {
       ForbiddenError.from(ability)

@@ -33,9 +33,7 @@ export class AbilityFatory {
       can(Action.Create, Auth);
       can(Action.Read, Auth);
       can(Action.Update, Auth);
-      cannot(Action.Delete, Auth, {
-        customerId: { $ne: auth.customerId },
-      }).because('*****');
+      cannot(Action.Delete, Auth);
     }
     return build({
       detectSubjectType: (item) =>
