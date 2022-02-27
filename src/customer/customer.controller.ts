@@ -9,9 +9,13 @@ import {
   ValidationPipe,
   UseGuards,
   Request,
+  ForbiddenException,
+  Delete,
 } from '@nestjs/common';
+import { Auth } from 'src/auth/entities/auth.entity';
 
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { AbilityFatory, Action } from './ability/ability-factory';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { TransferFundsDto } from './dto/Transfer-FundsDto';
@@ -19,9 +23,11 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Customer } from './entities/customer.entity';
 
 @Controller('customer')
-@UseGuards(JwtAuthGuard)
 export class CustomerController {
-  constructor(private readonly customerService: CustomerService) {}
+  constructor(
+    private readonly customerService: CustomerService,
+    private abilityFactory: AbilityFatory,
+  ) {}
 
   @Post()
   @UsePipes(ValidationPipe)
@@ -30,6 +36,7 @@ export class CustomerController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   async getCustomerProfile(
     @Request() req,
     @Param('id') id: string,
@@ -37,11 +44,15 @@ export class CustomerController {
     /*  if (req.user.id === id || req.user.user_role === USER_ROLE.ADMIN)
       return await this.customerService.getCustomerProfile(id);
     else throw new BadRequestException('Request not allowed...'); */
+    const ability = this.abilityFactory.defineAbility(req.user);
+    const isAllowed = ability.can(Action.Read, Auth);
+    if (!isAllowed) throw new ForbiddenException('Only admin can do it');
 
     return await this.customerService.getCustomerProfile(id);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   updateCustomer(
     @Param('id') id: string,
     @Body() updateCustomerDto: UpdateCustomerDto,
@@ -54,5 +65,20 @@ export class CustomerController {
     @Body() transferFundsDto: TransferFundsDto,
   ) {
     return this.customerService.transferFunds(id, transferFundsDto);
+  }
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  async deleteProfile(
+    @Request() req,
+    @Param('id') id: string,
+  ): Promise<Customer> {
+    console.log(req);
+    console.log(req.params.id);
+
+    const ability = this.abilityFactory.defineAbility(req.user);
+    const isAllowed = ability.cannot(Action.Delete, Auth);
+    if (!isAllowed) throw new ForbiddenException('Only admin can do it');
+
+    return this.customerService.deleteCustomer(id);
   }
 }

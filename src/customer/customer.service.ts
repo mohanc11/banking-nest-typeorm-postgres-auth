@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -69,5 +73,25 @@ export class CustomerService {
     await this.customerRepository.save(toTransfer);
 
     return 'amount transferred successfully...';
+  }
+  async getCustomerProfileByUsername(username: string): Promise<Customer> {
+    const customer: Customer = await this.customerRepository.findOne({
+      username,
+    });
+    if (!customer)
+      throw new BadRequestException(
+        'Login credentials can not be created for customer as customer does not have account',
+      );
+    return customer;
+  }
+  async deleteCustomer(id: string): Promise<Customer> {
+    const customer = await this.getCustomerProfile(id);
+    if (customer) {
+      const ret = await this.customerRepository.delete(id);
+      if (ret.affected === 1) {
+        return customer;
+      }
+    }
+    throw new NotFoundException(`Record cannot find by id ${id}`);
   }
 }

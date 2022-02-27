@@ -19,6 +19,9 @@ export class Auth {
   @Column()
   user_role: USER_ROLE;
 
+  @Column()
+  customerId: string;
+
   async validatePassword(password) {
     const hash = await bcrypt.hash(password, this.salt);
     return hash === this.password;
