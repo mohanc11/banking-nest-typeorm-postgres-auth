@@ -68,7 +68,11 @@ export class CustomerService {
     );
 
     cust.balance = cust.balance - transferFundsDto.fundToTransfer;
-    await this.customerRepository.save(cust);
+    console.log(cust);
+
+    const cust2 = await this.customerRepository.save(cust);
+    console.log(cust2);
+
     toTransfer.balance = toTransfer.balance + transferFundsDto.fundToTransfer;
     await this.customerRepository.save(toTransfer);
 

@@ -15,7 +15,9 @@ import {
 import { Auth, USER_ROLE } from 'src/auth/entities/auth.entity';
 
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { AbilitiesGaurd } from './ability/abilities-gaurd';
 import { AbilityFatory, Action } from './ability/ability-factory';
+import { CheckAbilities } from './ability/ability.decorator';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { TransferFundsDto } from './dto/Transfer-FundsDto';
@@ -55,18 +57,24 @@ export class CustomerController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
+  @UseGuards(AbilitiesGaurd)
+  @CheckAbilities({ action: Action.Update, subject: Auth })
   updateCustomer(
     @Param('id') id: string,
     @Body() updateCustomerDto: UpdateCustomerDto,
   ) {
     return this.customerService.updateCustomer(id, updateCustomerDto);
   }
-  @Patch('transfer/:id')
-  transferFunds(
-    @Param('id') id: string,
+
+  @Patch('transfer')
+  @UseGuards(JwtAuthGuard)
+  async transferFunds(
     @Body() transferFundsDto: TransferFundsDto,
-  ) {
-    return this.customerService.transferFunds(id, transferFundsDto);
+    @Request() req,
+  ): Promise<string> {
+    console.log(req.user.customerId);
+
+    return await this.customerService.transferFunds('2', transferFundsDto);
   }
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
@@ -75,7 +83,7 @@ export class CustomerController {
     @Param('id') id: string,
   ): Promise<Customer> {
     const ability = this.abilityFactory.defineAbility(req.user);
-    const isAllowed = ability.cannot(Action.Delete, Auth, id);
+    const isAllowed = ability.cannot(Action.Delete, Auth);
     if (!isAllowed) throw new ForbiddenException('Only admin can do it');
 
     if (req.user.customerId !== id && req.user.user_role !== USER_ROLE.ADMIN)
